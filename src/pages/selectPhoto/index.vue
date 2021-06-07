@@ -1,11 +1,12 @@
 <template>
   <div>
-    <div class="canvas" :class="!isChangeImg ? 'is_hidden_border':''">
-      <canvas id="canvas" width="180" height="300"></canvas>
-      <van-image :class="['phone_bg', isChangeImg ? 'phone_bg_opacity':'']" width="180" height="300" :src="phoneImg" />
-      <van-image :class="['aad_phone_img', isChangeImg ? 'is_opacity':'']" :width="imgWidth" :height="imgHeight" :src="imgSrc"/>
+    <div class="canvas_area" id="canvas_area">
+      <div id="cover" class="template"></div>
+      <canvas id="canvas" width="750" height="350"></canvas>
+      <!-- <van-image id="template" class="phone_bg" width="180" height="300" :src="phoneImg" /> -->
+      <img id="template" class="phone_bg" :width="imgWidth" :height="imgHeight" :src="phoneImg"/>
     </div>
-    <!-- <van-image :width="imgWidth" :height="imgHeight" :src="changeimg"/> -->
+    <img id="oImg" :width="imgWidth" :height="imgHeight" :src="selectImgs"/>
     <div class="select_img_box">
       <van-uploader :after-read="afterRead">
         <div class="upload_button">
@@ -13,16 +14,18 @@
           <span class="text">上传图片</span>
         </div>
       </van-uploader>
-      <van-image class="img_list" width="80" height="140" :src="imgSrc"/>
+      <van-image class="img_list" width="80" height="140" src="https://www.hz2030.com/userPicures/TOB20200806-RQMY6ZKL.jpeg" @click="selectImg"/>
     </div>
     <div class="bottom-btn">
-      <van-button size="large" round type="info" @click="next">下一步</van-button>
+      <van-button size="large" round type="info">下一步</van-button>
     </div>
   </div>
 </template>
 
 <script>
 import Vue from 'vue'
+import YAHOO from './utilitie'
+import Canvas from './canvasEl'
 import { Image as VanImage, Uploader, Icon, Button } from 'vant'
 Vue.use(VanImage)
 Vue.use(Uploader)
@@ -32,115 +35,123 @@ export default {
   name: 'selectPhoto',
   data () {
     return {
-      imgWidth: 200,
+      imgWidth: 180,
       imgHeight: 320,
       // 手机型号图片
       phoneImg: 'https://oss.hz2030.com/2020/10/17/3b4df02f853d413fb62e326b68dc0c18.png',
       // 用户选择中图片
-      imgSrc: 'https://www.hz2030.com/userPicures/TOB20200806-RQMY6ZKL.jpeg',
-      canvas: '',
-      ctx: '',
-      arr: '',
-      // 是否在修改图片
-      isChangeImg: false,
-      changeimg: ''
+      selectImgs: '',
+      canvas: ''
     }
+  },
+  created () {
+  },
+  mounted () {
   },
   methods: {
     afterRead (file) {
-      // 此时可以自行将文件上传至服务器
       console.log(file)
     },
-    next () {
-      this.canvas = document.getElementById('canvas')
-      this.ctx = this.canvas.getContext('2d')
-      this.arr = []
-      this.getImageData(this.phoneImg).then(res => {
-        this.getImageData(this.imgSrc).then(res => {
-          this.make()
-          // 合成canvas图片
-          this.changeimg = this.canvas.toDataURL('image/png')
-        })
-      })
+    // 选择图片
+    selectImg () {
+      this.selectImgs = 'https://www.hz2030.com/userPicures/TOB20200806-RQMY6ZKL.jpeg'
+      this.drawCanvas()
     },
-    // 获取图片信息
-    getImageData (src) {
-      var that = this
-      return new Promise((resolve, reject) => {
-        let img = new Image()
-        img.crossOrigin = ''
-        let canvas = document.createElement('canvas')
-        let ctx = canvas.getContext('2d')
-        img.src = src
-        img.onload = function () {
-          canvas.width = this.width
-          canvas.height = this.height
-          /**
-           * drawImage(img,sx,sy,swidth,sheight,x,y,width,height) 画布上面绘制图片
-           * sx 开始剪切的 x 坐标位置
-           * sy 开始剪切的 y 坐标位置
-           * swidth 被剪切图像的宽度
-           * sheight 被剪切图像的高度
-           * x 在画布上放置图像的 x 坐标位置
-           * y 在画布上放置图像的 y 坐标位置
-           * width 要使用的图像的宽度
-           * height 要使用的图像的高度
-          */
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height, 0, 0, 180, 300)
-          /**
-           * getImageData 复制画布上指定矩形的像素数据，然后通过 putImageData() 将图像数据放回画布
-           * getImageData(x,y,width,height)
-           * x 开始复制的左上角位置的 x 坐标
-           * y 开始复制的左上角位置的 y 坐标
-           * width 将要复制的矩形区域的宽度
-           * height 将要复制的矩形区域的高度
-          */
-          that.arr.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
-          resolve()
-        }
-      })
-    },
-    // 合成图片
-    make () {
-      let target = this.arr[0]
-      let add = this.arr[1]
-      for (let i = 0; i < target.height; i++) {
-        for (let j = 0; j < target.width; j++) {
-          var index = i * target.width * 4 + j * 4
-          var r = target.data[index + 0]
-          var g = target.data[index + 1]
-          var b = target.data[index + 2]
-          var a = target.data[index + 3]
-          if (a < 255) {
-            let index1 = (i - 0) * add.width * 4 + (j - 0) * 4
-            if (add.data[index1]) {
-              if (a === 0) {
-                target.data[index] = add.data[index1]
-                target.data[index + 1] = add.data[index1 + 1]
-                target.data[index + 2] = add.data[index1 + 2]
-                target.data[index + 3] = 255
-              } else {
-                let ratio = a / 255
-                target.data[index] = ratio * r + (1 - ratio) * add.data[index1]
-                target.data[index + 1] = ratio * g + (1 - ratio) * add.data[index1 + 1]
-                target.data[index + 2] = ratio * b + (1 - ratio) * add.data[index1 + 2]
-                target.data[index + 3] = 255
-              }
-            } else {
-              break
-            }
-          }
-          continue
-        }
+    /**
+     * 绘制图片
+     */
+    drawCanvas () {
+      let imageId = 'oImg'
+
+      // 如果此容器已经存在则删除
+      if (YAHOO.util.Dom.inDocument('canvas-canvas-container')) {
+        var canvasArea = document.getElementById('canvas_area')
+        canvasArea.innerHTML = this.canvasHtml()
       }
-      this.ctx.putImageData(target, 0, 0)
+
+      // 读取模板图片参数
+      var templateObj = document.getElementById('template')
+      console.log('templateObj====', templateObj)
+      var tLeft = templateObj.offsetLeft // 获取开模图顶部x坐标
+      var tTop = templateObj.offsetTop // 获取开模图顶部y坐标
+      var tWidth = templateObj.naturalWidth // 获取开模图宽度
+      var tHeight = templateObj.naturalHeight // 获取开模图高度
+
+      // 读取制作图片参数
+      var oImgObj = document.getElementById(imageId)
+      var oWidth = oImgObj.naturalWidth
+      var oHeight = oImgObj.naturalHeight
+
+      // 读取制作区域参数
+      var canvasAreaObj = document.getElementById('canvas_area')
+      var aLeft = canvasAreaObj.offsetLeft // 获取canvas区域顶部x坐标
+      var aTop = canvasAreaObj.offsetTop // 获取canvas区域顶部y坐标
+      var aWidth = canvasAreaObj.clientWidth
+      var aHeight = canvasAreaObj.clientHeight
+      // 计算制作图片宽高
+      var imgWidth = templateObj.scrollWidth // 计算误差
+      var imgHeight = tHeight / (tWidth / imgWidth)
+      var scale = (oWidth / imgWidth) > (oHeight / imgHeight) ? (oHeight / imgHeight) : (oWidth / imgWidth)
+      var adImgWidth = parseInt(oWidth / scale)
+      var adImgHeight = parseInt(oHeight / scale)
+
+      // 设置制作图大小
+      oImgObj.width = adImgWidth
+      oImgObj.height = adImgHeight
+
+      // 计算掩盖层参数
+      var coverBorderLeft = tLeft - aLeft
+      var coverBorderTop = tTop - aTop
+      var coverWidth = imgWidth
+      var coverHeight = imgHeight
+      var coverBorderRight = aWidth - coverBorderLeft - coverWidth
+      var coverBorderBottom = aHeight - coverBorderTop - coverHeight
+
+      // 设置掩盖层参数
+      var coverObj = document.getElementById('cover')
+      coverObj.style.width = coverWidth + 'px'
+      coverObj.style.height = coverHeight + 'px'
+      coverObj.style.borderTop = coverBorderTop + 'px solid #ebebeb'
+      coverObj.style.borderLeft = coverBorderLeft + 'px solid #ebebeb'
+      coverObj.style.borderRight = coverBorderRight + 'px solid #ebebeb'
+      coverObj.style.borderBottom = coverBorderBottom + 'px solid #ebebeb'
+
+      // 制图开始
+      this.canvas = new Canvas.Element()
+      this.canvas._aImages = null
+      this.canvas.init('canvas', {
+        width: 750,
+        height: 350,
+        x: tLeft,
+        y: tTop
+      })
+      let oImg = new Canvas.Img(imageId, {
+        // left图片需左右居中，向左移动 = (adImgWidth - imgWidth) / 2
+        angle: 0,
+        top: tTop - ((adImgHeight - imgHeight) / 2),
+        left: tLeft - ((adImgWidth - imgWidth) / 2),
+        border: 0
+      })
+      this.canvas.addImage(oImg) // 绘制图片
+      this.canvas._aImages[0].setCornersVisibility(false) // 选中四角
+
+      // 修改开模状态
+      this.canvas.renderAll(false)
+    },
+    // 初始化html
+    canvasHtml () {
+      let templateSrc = 'https://oss.hz2030.com/2020/10/17/3b4df02f853d413fb62e326b68dc0c18.png'
+      var html = '<div id="cover" class="template"></div>' +
+          '<img src="' + templateSrc + '" id="template" width="300"/>' +
+          '<canvas id="canvas"></canvas>'
+      return html
     }
   }
 }
 </script>
 
 <style scoped>
-  .canvas {
+  .canvas_area {
     width: 180px;
     height: 300px;
     position: relative;
@@ -149,26 +160,15 @@ export default {
     justify-content: center;
     margin: 20px auto 50px;
   }
-  .is_hidden_border{
-    overflow: hidden;
+  canvas {
+    position: absolute;
+    opacity: 0.5;
+    z-index: 3;
   }
   .phone_bg {
     position: absolute;
     margin: auto;
     z-index: 9;
-  }
-  .aad_phone_img {
-    position: absolute;
-    margin: auto;
-    opacity: 1;
-    z-index: 2;
-  }
-  .is_opacity {
-    opacity: 0.5;
-    z-index: 10;
-  }
-  .phone_bg_opacity{
-    z-index: 2;
   }
   .select_img_box {
     display: flex;
@@ -204,5 +204,10 @@ export default {
     position: absolute;
     bottom: 3%;
     left: 5%;
+  }
+  #oImg {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
   }
 </style>
