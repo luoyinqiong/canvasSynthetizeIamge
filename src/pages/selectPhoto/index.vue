@@ -1,12 +1,12 @@
 <template>
   <div>
-    <div class="canvas_area" id="canvas_area">
-      <div id="cover" class="template"></div>
-      <canvas id="canvas" width="750" height="350"></canvas>
-      <!-- <van-image id="template" class="phone_bg" width="180" height="300" :src="phoneImg" /> -->
-      <img id="template" class="phone_bg" :width="imgWidth" :height="imgHeight" :src="phoneImg"/>
+    <div class="canvas_box">
+      <canvas id="canvas" ref="canvasImg" :width="pageWidth" height="350"></canvas>
+      <!-- 手机壳模板图片 -->
+      <img ref="phoneShellTemplate" class="phone_shell_template" :width="imgWidth" :height="imgHeight" :src="phoneImg"/>
+      <!-- 缓存选中制作图片 -->
+      <img ref="selectImg" class="select_img" :width="selectImgWidth" :src="selectImgs"/>
     </div>
-    <img id="oImg" :width="imgWidth" :height="imgHeight" :src="selectImgs"/>
     <div class="select_img_box">
       <van-uploader :after-read="afterRead">
         <div class="upload_button">
@@ -24,8 +24,7 @@
 
 <script>
 import Vue from 'vue'
-import YAHOO from './utilitie'
-import Canvas from './canvasEl'
+import Canvas from './../../utils/canvasEL'
 import { Image as VanImage, Uploader, Icon, Button } from 'vant'
 Vue.use(VanImage)
 Vue.use(Uploader)
@@ -35,13 +34,15 @@ export default {
   name: 'selectPhoto',
   data () {
     return {
+      // 手机壳模型宽度、高度、手机型号图片
       imgWidth: 180,
       imgHeight: 320,
-      // 手机型号图片
       phoneImg: 'https://oss.hz2030.com/2020/10/17/3b4df02f853d413fb62e326b68dc0c18.png',
-      // 用户选择中图片
+      // 页面宽度
+      pageWidth: document.body.clientWidth,
+      // 用户选择中图片、图片宽度
       selectImgs: '',
-      canvas: ''
+      selectImgWidth: 180
     }
   },
   created () {
@@ -55,121 +56,67 @@ export default {
     // 选择图片
     selectImg () {
       this.selectImgs = 'https://www.hz2030.com/userPicures/TOB20200806-RQMY6ZKL.jpeg'
-      this.drawCanvas()
+      this.$nextTick(() => {
+        this.drawCanvas()
+      })
     },
-    /**
-     * 绘制图片
-     */
     drawCanvas () {
-      let imageId = 'oImg'
-
-      // 如果此容器已经存在则删除
-      if (YAHOO.util.Dom.inDocument('canvas-canvas-container')) {
-        var canvasArea = document.getElementById('canvas_area')
-        canvasArea.innerHTML = this.canvasHtml()
-      }
-
-      // 读取模板图片参数
-      var templateObj = document.getElementById('template')
-      console.log('templateObj====', templateObj)
-      var tLeft = templateObj.offsetLeft // 获取开模图顶部x坐标
-      var tTop = templateObj.offsetTop // 获取开模图顶部y坐标
-      var tWidth = templateObj.naturalWidth // 获取开模图宽度
-      var tHeight = templateObj.naturalHeight // 获取开模图高度
-
+      const that = this
+      console.log('this.$refs.canvasImg', that.$refs.canvasImg)
+      // 读取手机壳模板图片参数
+      const phoneBgObj = that.$refs.phoneShellTemplate
+      // console.log('phoneBgObj====', that.$refs.phoneShellTemplate)
+      // 模板距离视图左边距离、顶部距离，原始宽度，原始高度
+      // const templateLeft = phoneBgObj.getBoundingClientRect().left
+      // const templateTop = phoneBgObj.getBoundingClientRect().top
+      const templateWidth = phoneBgObj.naturalWidth
+      const templateHeight = phoneBgObj.naturalHeight
       // 读取制作图片参数
-      var oImgObj = document.getElementById(imageId)
-      var oWidth = oImgObj.naturalWidth
-      var oHeight = oImgObj.naturalHeight
-
-      // 读取制作区域参数
-      var canvasAreaObj = document.getElementById('canvas_area')
-      var aLeft = canvasAreaObj.offsetLeft // 获取canvas区域顶部x坐标
-      var aTop = canvasAreaObj.offsetTop // 获取canvas区域顶部y坐标
-      var aWidth = canvasAreaObj.clientWidth
-      var aHeight = canvasAreaObj.clientHeight
+      const selectImgObj = that.$refs.selectImg
+      // console.log('selectImgObj===', selectImgObj)
+      // 制作图片原始宽度、原始高度
+      const selectImgWidth = selectImgObj.naturalWidth
+      const selectImgHeight = selectImgObj.naturalHeight
       // 计算制作图片宽高
-      var imgWidth = templateObj.scrollWidth // 计算误差
-      var imgHeight = tHeight / (tWidth / imgWidth)
-      var scale = (oWidth / imgWidth) > (oHeight / imgHeight) ? (oHeight / imgHeight) : (oWidth / imgWidth)
-      var adImgWidth = parseInt(oWidth / scale)
-      var adImgHeight = parseInt(oHeight / scale)
-
-      // 设置制作图大小
-      oImgObj.width = adImgWidth
-      oImgObj.height = adImgHeight
-
-      // 计算掩盖层参数
-      var coverBorderLeft = tLeft - aLeft
-      var coverBorderTop = tTop - aTop
-      var coverWidth = imgWidth
-      var coverHeight = imgHeight
-      var coverBorderRight = aWidth - coverBorderLeft - coverWidth
-      var coverBorderBottom = aHeight - coverBorderTop - coverHeight
-
-      // 设置掩盖层参数
-      var coverObj = document.getElementById('cover')
-      coverObj.style.width = coverWidth + 'px'
-      coverObj.style.height = coverHeight + 'px'
-      coverObj.style.borderTop = coverBorderTop + 'px solid #ebebeb'
-      coverObj.style.borderLeft = coverBorderLeft + 'px solid #ebebeb'
-      coverObj.style.borderRight = coverBorderRight + 'px solid #ebebeb'
-      coverObj.style.borderBottom = coverBorderBottom + 'px solid #ebebeb'
-
-      // 制图开始
-      this.canvas = new Canvas.Element()
-      this.canvas._aImages = null
-      this.canvas.init('canvas', {
-        width: 750,
-        height: 350,
-        x: tLeft,
-        y: tTop
-      })
-      let oImg = new Canvas.Img(imageId, {
-        // left图片需左右居中，向左移动 = (adImgWidth - imgWidth) / 2
-        angle: 0,
-        top: tTop - ((adImgHeight - imgHeight) / 2),
-        left: tLeft - ((adImgWidth - imgWidth) / 2),
-        border: 0
-      })
-      this.canvas.addImage(oImg) // 绘制图片
-      this.canvas._aImages[0].setCornersVisibility(false) // 选中四角
-
-      // 修改开模状态
-      this.canvas.renderAll(false)
-    },
-    // 初始化html
-    canvasHtml () {
-      let templateSrc = 'https://oss.hz2030.com/2020/10/17/3b4df02f853d413fb62e326b68dc0c18.png'
-      var html = '<div id="cover" class="template"></div>' +
-          '<img src="' + templateSrc + '" id="template" width="300"/>' +
-          '<canvas id="canvas"></canvas>'
-      return html
+      // 获取模板图片的实际宽度
+      const templateScrollWidth = phoneBgObj.scrollWidth
+      const templateScrollHeight = templateHeight / (templateWidth / templateScrollWidth)
+      const scale = (selectImgWidth / templateScrollWidth) > (selectImgHeight / templateScrollHeight) ? (selectImgHeight / templateScrollHeight) : (selectImgWidth / templateScrollWidth)
+      const adImgWidth = parseInt(selectImgWidth / scale)
+      that.selectImgWidth = adImgWidth
+      // console.log('that.selectImgWidth===', that.selectImgWidth)
+      const canvas = new Canvas.Element()
+      console.log('Canvas====', canvas)
     }
   }
 }
 </script>
 
 <style scoped>
-  .canvas_area {
+  .canvas_box {
     width: 180px;
-    height: 300px;
+    height: 320px;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 20px auto 50px;
+    /* overflow: hidden; */
   }
-  canvas {
-    position: absolute;
-    opacity: 0.5;
-    z-index: 3;
-  }
-  .phone_bg {
+  /* 手机壳样式 */
+  .phone_shell_template {
     position: absolute;
     margin: auto;
     z-index: 9;
   }
+  /* 缓存选择图片 */
+  .select_img {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    height: auto;
+  }
+  /* 图片列表 */
   .select_img_box {
     display: flex;
     flex-direction: row;
@@ -183,6 +130,7 @@ export default {
   .van-image__img{
     border-radius: 8px;
   }
+  /* 上传图片 */
   .upload_button{
     display: flex;
     flex-direction: column;
@@ -204,10 +152,5 @@ export default {
     position: absolute;
     bottom: 3%;
     left: 5%;
-  }
-  #oImg {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
   }
 </style>
