@@ -7,17 +7,36 @@
       <!-- 缓存选中制作图片 -->
       <img ref="selectImg" class="select_img" :width="selectImgWidth" :src="selectImgs"/>
     </div>
-    <div class="select_img_box">
-      <van-uploader :after-read="afterRead">
-        <div class="upload_button">
-          <van-icon name="photo-o" size="25" />
+    <!-- 选择图片 start -->
+    <template v-if="!pageProgress">
+      <div class="select_img_box">
+        <div class="upload_button" @click="popupState = true">
+          <van-icon name="photograph" size="25" />
           <span class="text">上传图片</span>
         </div>
-      </van-uploader>
-      <van-image class="img_list" width="80" height="140" src="https://www.hz2030.com/userPicures/TOB20200806-RQMY6ZKL.jpeg" @click="selectImg"/>
+        <van-image class="img_list" width="80" height="140" src="https://www.hz2030.com/userPicures/TOB20200806-RQMY6ZKL.jpeg" @click="selectImg"/>
+      </div>
+      <van-popup overlay-class="popup" v-model="popupState" position="bottom">
+        <van-uploader capture="camera" :after-read="afterRead">
+          <p>拍照</p>
+        </van-uploader>
+        <van-uploader :after-read="afterRead">
+          <p>从手机相册选择</p>
+        </van-uploader>
+        <p @click="popupState = false">取消</p>
+      </van-popup>
+    </template>
+    <!-- 选择图片 end -->
+    <!-- 颜色选择器进度条 start -->
+    <div class="color_font_select" v-if="pageProgress">
+      <Slider v-model="colors" :showDetails="false" />
+      <div class="font_slider">
+        <span v-for="item in 10" :key="item">文字{{item}}</span>
+      </div>
     </div>
+    <!-- 颜色选择器进度条 end -->
     <div class="bottom-btn">
-      <van-button size="large" round type="info">下一步</van-button>
+      <van-button size="large" round type="info" @click="next">下一步</van-button>
     </div>
   </div>
 </template>
@@ -25,13 +44,18 @@
 <script>
 import Vue from 'vue'
 import Canvas from './../../utils/canvasEL'
-import { Image as VanImage, Uploader, Icon, Button } from 'vant'
+import Slider from './../../components/vue-color/Slider.vue'
+import { Image as VanImage, Uploader, Icon, Button, Popup } from 'vant'
 Vue.use(VanImage)
 Vue.use(Uploader)
 Vue.use(Icon)
 Vue.use(Button)
+Vue.use(Popup)
 export default {
   name: 'selectPhoto',
+  components: {
+    Slider
+  },
   data () {
     return {
       // 手机壳模型宽度、高度、手机型号图片
@@ -42,7 +66,11 @@ export default {
       pageWidth: document.body.clientWidth,
       // 用户选择中图片、图片宽度
       selectImgs: '',
-      selectImgWidth: 180
+      selectImgWidth: 180,
+      // 弹窗状态
+      popupState: false,
+      pageProgress: false,
+      colors: '#194d33'
     }
   },
   created () {
@@ -87,6 +115,11 @@ export default {
       // console.log('that.selectImgWidth===', that.selectImgWidth)
       const canvas = new Canvas.Element()
       console.log('Canvas====', canvas)
+    },
+    // 下一步
+    next () {
+      console.log('下一步')
+      this.pageProgress = !this.pageProgress
     }
   }
 }
@@ -100,7 +133,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 20px auto 50px;
+    margin: 20px auto 30px;
     /* overflow: hidden; */
   }
   /* 手机壳样式 */
@@ -144,13 +177,38 @@ export default {
     margin-right: 10px;
   }
   .text{
-    font-size: 14px;
-    margin-top: 10px;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+  .van-popup--bottom {
+    height: '30%';
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .van-popup--bottom p{
+    margin: 0;
+    height: 60px;
+    line-height: 60px;
+    text-align: center;
+    color: #1b1b1b;
+    border-top: 1px solid #ebedf0;
+  }
+  /deep/ .van-uploader__wrapper{
+    display: block !important;
+  }
+  .font_slider{
+    display: flex;
+    flex-direction: row;
+    flex-flow: row;
+    overflow-x: auto;
+  }
+  .font_slider span{
+    flex:none;
+    padding: 0 30px;
   }
   .bottom-btn{
     width: 90%;
-    position: absolute;
-    bottom: 3%;
-    left: 5%;
+    margin: 30px auto 0;
   }
 </style>
