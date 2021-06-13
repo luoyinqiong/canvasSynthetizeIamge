@@ -119,7 +119,12 @@ export default {
     // 下一步
     next () {
       console.log('下一步')
-      this.pageProgress = !this.pageProgress
+      if (!this.pageProgress) {
+        this.pageProgress = !this.pageProgress
+        return false
+      } else {
+        this.$router.push({name: 'saveImg'})
+      }
     }
   }
 }

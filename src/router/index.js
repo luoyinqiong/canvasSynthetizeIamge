@@ -5,24 +5,24 @@ Vue.use(Router)
 
 const router = new Router({
   routes: [
-    {
-      path: '/',
-      name: 'selectPhoto',
-      component: () => import('@/pages/selectPhoto'),
-      meta: {
-        title: '选择定制手机壳类型', // 顶部文字
-        leftArrow: false // 是否显示返回键
-      }
-    },
     // {
     //   path: '/',
-    //   name: 'home',
-    //   component: () => import('@/pages/home'),
+    //   name: 'selectPhoto',
+    //   component: () => import('@/pages/selectPhoto'),
     //   meta: {
     //     title: '选择定制手机壳类型', // 顶部文字
     //     leftArrow: false // 是否显示返回键
     //   }
     // },
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('@/pages/home'),
+      meta: {
+        title: '选择定制手机壳类型', // 顶部文字
+        leftArrow: false // 是否显示返回键
+      }
+    },
     {
       path: '/selectModel',
       name: 'selectModel',
@@ -38,6 +38,15 @@ const router = new Router({
       component: () => import('@/pages/selectPhoto'),
       meta: {
         title: '选择图片', // 顶部文字
+        leftArrow: true // 是否显示返回键
+      }
+    },
+    {
+      path: '/saveImg',
+      name: 'saveImg',
+      component: () => import('@/pages/saveImg'),
+      meta: {
+        title: '保存图片', // 顶部文字
         leftArrow: true // 是否显示返回键
       }
     }
